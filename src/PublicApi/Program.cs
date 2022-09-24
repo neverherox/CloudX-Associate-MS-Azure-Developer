@@ -82,6 +82,7 @@ builder.Services.AddCors(options =>
                       });
 });
 
+builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddControllers();
 
 builder.Services.AddMediatR(typeof(CatalogItem).Assembly);
