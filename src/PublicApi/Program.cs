@@ -76,7 +76,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: CORS_POLICY,
                       corsPolicyBuilder =>
                       {
-                          corsPolicyBuilder.WithOrigins("https://e-shop.azurewebsites.net");
+                          corsPolicyBuilder.AllowAnyOrigin();
                           corsPolicyBuilder.AllowAnyMethod();
                           corsPolicyBuilder.AllowAnyHeader();
                       });
