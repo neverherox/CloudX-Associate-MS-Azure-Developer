@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,6 +8,7 @@ using Microsoft.eShopWeb.ApplicationCore.Exceptions;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.Infrastructure.Identity;
 using Microsoft.eShopWeb.Web.Interfaces;
+using Newtonsoft.Json;
 
 namespace Microsoft.eShopWeb.Web.Pages.Basket;
 
@@ -55,6 +57,14 @@ public class CheckoutModel : PageModel
             await _basketService.SetQuantities(BasketModel.Id, updateModel);
             await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
             await _basketService.DeleteBasketAsync(BasketModel.Id);
+            var client = new HttpClient();
+            var jsonDictionary = JsonConvert.SerializeObject(updateModel);
+            var content = new StringContent(jsonDictionary, Encoding.UTF8, "application/json");
+            await client.PostAsync(
+                //"http://localhost:7071/api/OrderItemsReserver",
+                "https://e-shopfunctions.azurewebsites.net/api/OrderItemsReserver?code=6TuMNGAckZ9AGzArT_JSbcJBSEGrxDwDAP-zGkBZYo9nAzFuF99BFQ==",
+                content
+            );
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {
