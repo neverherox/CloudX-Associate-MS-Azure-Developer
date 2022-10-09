@@ -54,15 +54,22 @@ public class CheckoutModel : PageModel
             }
 
             var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
+            var shippingAddress = new Address("123 Main St.", "Kent", "OH", "United States", "44240");
+
             await _basketService.SetQuantities(BasketModel.Id, updateModel);
-            await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
+            var order = await _orderService.CreateOrderAsync(BasketModel.Id, shippingAddress);
             await _basketService.DeleteBasketAsync(BasketModel.Id);
+            var orderDetails = new
+            {
+                ShippingAddress = order.ShipToAddress,
+                Items = order.OrderItems,
+                Price = order.Total()
+            };
             var client = new HttpClient();
-            var jsonDictionary = JsonConvert.SerializeObject(updateModel);
+            var jsonDictionary = JsonConvert.SerializeObject(orderDetails);
             var content = new StringContent(jsonDictionary, Encoding.UTF8, "application/json");
             await client.PostAsync(
-                //"http://localhost:7071/api/OrderItemsReserver",
-                "https://e-shopfunctions.azurewebsites.net/api/OrderItemsReserver?code=6TuMNGAckZ9AGzArT_JSbcJBSEGrxDwDAP-zGkBZYo9nAzFuF99BFQ==",
+                "http://localhost:7071/api/order-items-reserver",
                 content
             );
         }
