@@ -1,12 +1,11 @@
-using System;
+﻿using System;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -14,7 +13,7 @@ namespace AzureFunctions
 {
     public static class OrderItemsReserver
     {
-        [FunctionName("OrderItemsReserver")]
+        [FunctionName("order-items-reserver")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
@@ -31,16 +30,22 @@ namespace AzureFunctions
                 ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
                 : $"Hello, {name}. This HTTP triggered function executed successfully.";
 
-            var blobServiceClient = new BlobServiceClient(
-                "DefaultEndpointsProtocol=https;AccountName=eshopstor;AccountKey=piZ7DZl+kQO3pzttDTF5jtLHDJ8Nerh+Sdw69A4Jh6gDshzcn/wdtalVfct2m1ubthlNSUhy6Nhm+AStxyc7hQ==;EndpointSuffix=core.windows.net"
-                );
-            var containerClient = blobServiceClient.GetBlobContainerClient("e-shop-container");
-            var blobName = "order-details." + Guid.NewGuid() + ".json";
-            await using (MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(requestBody)))
+            var orderDetails = new
             {
-                await containerClient.UploadBlobAsync(blobName, ms);
-            }
+                id = Guid.NewGuid().ToString(),
+                Items = data.Items,
+                ShippingAddress = data.ShippingAddress,
+                Price = data.Price,
+                OrderID = Guid.NewGuid().ToString()
+            };
 
+            var cosmosClient = new CosmosClient(
+                "",
+                ""
+                );
+            var database = cosmosClient.GetDatabase("e-shop-cosmos-database");
+            var container = database.GetContainer("e-shop-cosmos-container");
+            await container.CreateItemAsync(orderDetails, new PartitionKey(orderDetails.OrderID));
             return new OkObjectResult(responseMessage);
         }
     }
