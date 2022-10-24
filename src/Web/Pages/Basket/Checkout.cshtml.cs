@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -57,14 +58,14 @@ public class CheckoutModel : PageModel
             await _basketService.SetQuantities(BasketModel.Id, updateModel);
             await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
             await _basketService.DeleteBasketAsync(BasketModel.Id);
-            var client = new HttpClient();
             var jsonDictionary = JsonConvert.SerializeObject(updateModel);
             var content = new StringContent(jsonDictionary, Encoding.UTF8, "application/json");
-            await client.PostAsync(
-                //"http://localhost:7071/api/OrderItemsReserver",
-                "https://e-shopfunctions.azurewebsites.net/api/OrderItemsReserver?code=6TuMNGAckZ9AGzArT_JSbcJBSEGrxDwDAP-zGkBZYo9nAzFuF99BFQ==",
-                content
-            );
+            await using var client = new ServiceBusClient(
+                ""
+                );
+            await using var sender = client.CreateSender("orders");
+            var message = new ServiceBusMessage(jsonDictionary);
+            await sender.SendMessageAsync(message);
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {
