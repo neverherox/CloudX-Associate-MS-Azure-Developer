@@ -55,17 +55,31 @@ public class CheckoutModel : PageModel
             }
 
             var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
+            var shippingAddress = new Address("123 Main St.", "Kent", "OH", "United States", "44240");
             await _basketService.SetQuantities(BasketModel.Id, updateModel);
-            await _orderService.CreateOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
+            var order = await _orderService.CreateOrderAsync(BasketModel.Id, shippingAddress);
             await _basketService.DeleteBasketAsync(BasketModel.Id);
             var jsonDictionary = JsonConvert.SerializeObject(updateModel);
-            var content = new StringContent(jsonDictionary, Encoding.UTF8, "application/json");
             await using var client = new ServiceBusClient(
                 ""
                 );
-            await using var sender = client.CreateSender("orders");
+            await using var sender = client.CreateSender("e-shop-queue");
             var message = new ServiceBusMessage(jsonDictionary);
             await sender.SendMessageAsync(message);
+
+            var orderDetails = new
+            {
+                ShippingAddress = order.ShipToAddress,
+                Items = order.OrderItems,
+                Price = order.Total()
+            };
+            var jsonOrderDetails = JsonConvert.SerializeObject(orderDetails);
+            var content = new StringContent(jsonOrderDetails, Encoding.UTF8, "application/json");
+            var httpClient = new HttpClient();
+            await httpClient.PostAsync(
+                "",
+                content
+            );
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {
